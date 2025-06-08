@@ -1,0 +1,69 @@
+# Example issue import definition file
+# This file contains sample issues that can be imported into the repository
+# Each issue supports the following fields:
+# - title: Issue title (required)
+# - body: Issue description (optional)
+# - labels: Array of label names (optional)
+# - assignees: Array of GitHub usernames (optional)
+# - milestone: Milestone name or number (optional)
+# - imported: Boolean indicating if issue was imported (default: false)
+# - url: URL of created issue (default: null, populated after import)
+# - issue_no: Issue number (default: null, populated after import)
+
+issues:
+  - title: "Setup Azure Storage Integration"
+    body: |
+      Implement Azure Blob Storage integration for storing event metadata and snapshots.
+      
+      **Tasks:**
+      - Configure Azure Storage Account
+      - Implement blob upload functionality
+      - Add configuration for storage keys
+      - Create storage container management
+    labels:
+      - "enhancement"
+      - "azure"
+      - "storage"
+    assignees: []
+    milestone: "v1.0"
+    imported: false
+    url: null
+    issue_no: null
+
+  - title: "Create Searchable Event Dashboard"
+    body: |
+      Develop a web frontend that allows filtering and searching events by various criteria.
+      
+      **Requirements:**
+      - Filter by date, month, year
+      - Filter by event type
+      - Keyword search functionality
+      - Modern, responsive UI
+    labels:
+      - "enhancement"
+      - "frontend"
+      - "dashboard"
+    assignees: []
+    milestone: "v1.0"
+    imported: false
+    url: null
+    issue_no: null
+
+  - title: "Implement Google Nest Device Access API Integration"
+    body: |
+      Connect to Google Nest cameras and stream event data via Google Cloud Pub/Sub.
+      
+      **Components:**
+      - Device Access API authentication
+      - Pub/Sub subscription setup
+      - Event data normalization
+      - Error handling and retry logic
+    labels:
+      - "enhancement"
+      - "google-api"
+      - "backend"
+    assignees: []
+    milestone: "v1.0"
+    imported: false
+    url: null
+    issue_no: null
