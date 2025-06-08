@@ -23,26 +23,11 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Import issues from example-issues.yml
+      - name: Import issues from definition files
         uses: dsanchezcr/issue-importer-action@v1.0.0
         with:
-          file-path: 'src/data/issues/example-issues.yml'
-          file-format: yaml
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Import issues from additional-issues.csv
-        uses: dsanchezcr/issue-importer-action@v1.0.0
-        with:
-          file-path: 'src/data/issues/additional-issues.csv'
-          file-format: csv
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Import issues from nestwatch_mvp.csv
-        uses: dsanchezcr/issue-importer-action@v1.0.0
-        with:
-          file-path: 'src/data/issues/nestwatch_mvp.csv'
-          file-format: csv
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-definition-file: 'src/data/issues/'
           
       - name: Commit updated issue definition files
         run: |
