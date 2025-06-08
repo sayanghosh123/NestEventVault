@@ -1,3 +1,4 @@
+---
 name: Import Issues
 
 on:
@@ -16,19 +17,37 @@ permissions:
 jobs:
   import-issues:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Import issues from definition files
-        uses: dsanchezcr/issue-importer-action@v1.0.0
+
+      - name: Import YAML issues
+        uses: dsanchezcr/issue-importer-action@v1
         with:
+          file-path: 'src/data/issues/example-issues.yml'
+          file-format: yaml
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-definition-file: 'src/data/issues/'
-          
+        continue-on-error: true
+
+      - name: Import CSV issues (additional)
+        uses: dsanchezcr/issue-importer-action@v1
+        with:
+          file-path: 'src/data/issues/additional-issues.csv'
+          file-format: csv
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Import CSV issues (nestwatch)
+        uses: dsanchezcr/issue-importer-action@v1
+        with:
+          file-path: 'src/data/issues/nestwatch_mvp.csv'
+          file-format: csv
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
       - name: Commit updated issue definition files
         run: |
           git config --local user.email "action@github.com"
@@ -39,4 +58,3 @@ jobs:
           else
             git commit -m "Update issue definition files after import [skip ci]"
             git push
-          fi
