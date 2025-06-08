@@ -24,7 +24,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Import issues from definition files
-        uses: dsanchezcr/issue-importer-action@v1
+        uses: dsanchezcr/issue-importer-action@v1.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           issue-definition-file: 'src/data/issues/'
