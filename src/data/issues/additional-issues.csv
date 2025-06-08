@@ -1,0 +1,16 @@
+title,body,labels,assignees,milestone,imported,url,issue_no
+"Add Security Documentation","Create comprehensive security documentation covering:
+- Credential management best practices
+- Data encryption details  
+- Azure security configuration
+- Authentication flow documentation","documentation,security","","v1.1",false,,
+"Implement Event Type Filtering","Add filtering capabilities for different event types:
+- Motion detection events
+- Person detection events  
+- Sound detection events
+- Custom event filtering","enhancement,filtering","","v1.0",false,,
+"Create Unit Tests","Implement comprehensive unit test coverage:
+- Backend API tests
+- Frontend component tests
+- Integration tests
+- Mock Google API responses","testing,quality","","v1.0",false,,

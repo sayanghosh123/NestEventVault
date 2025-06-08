@@ -1,0 +1,42 @@
+name: Import Issues
+
+on:
+  push:
+    paths:
+      - 'src/data/issues/**'
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  import-issues:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Import issues from definition files
+        uses: dsanchezcr/issue-importer-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-definition-file: 'src/data/issues/'
+          
+      - name: Commit updated issue definition files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add src/data/issues/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update issue definition files after import [skip ci]"
+            git push
+          fi
