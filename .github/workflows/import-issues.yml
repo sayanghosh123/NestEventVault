@@ -1,3 +1,4 @@
+---
 name: Import Issues
 
 on:
@@ -14,21 +15,99 @@ permissions:
   issues: write
 
 jobs:
-  import-issues:
+  find-changed-files:
     runs-on: ubuntu-latest
-    
+    outputs:
+      files: ${{ steps.find-files.outputs.files }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Import issues from definition files
-        uses: dsanchezcr/issue-importer-action@v1.0.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-definition-file: 'src/data/issues/'
+
+      - name: Find changed/added issue definition files
+        id: find-files
+        run: |
+          files=()
           
+          # Get the list of changed and added files in src/data/issues/ with target extensions
+          # Use git diff to compare with the previous commit
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # For push events, compare with the previous commit
+            changed_files=$(git diff --name-only --diff-filter=AM ${{ github.event.before }}..${{ github.event.after }} -- 'src/data/issues/*.yml' 'src/data/issues/*.yaml' 'src/data/issues/*.csv' || true)
+          else
+            # For workflow_dispatch or other events, find all matching files
+            changed_files=$(find src/data/issues/ -name "*.yml" -o -name "*.yaml" -o -name "*.csv" || true)
+          fi
+          
+          # Process each changed/added file
+          for file in $changed_files; do
+            # Skip if file doesn't exist (could be deleted)
+            [ -f "$file" ] || continue
+
+            # Skip README and other non-issue files
+            basename_file=$(basename "$file")
+            if [[ "$basename_file" == "README"* ]]; then
+              echo "Skipping $file (README file)"
+              continue
+            fi
+
+            # Determine file format based on extension
+            if [[ "$file" == *.yml ]] || [[ "$file" == *.yaml ]]; then
+              format="yaml"
+            elif [[ "$file" == *.csv ]]; then
+              format="csv"
+            else
+              echo "Unknown file format for $file, skipping"
+              continue
+            fi
+
+            echo "Found changed/added file: $file with format: $format"
+            files+=("{\"file\":\"$file\",\"format\":\"$format\"}")
+          done
+
+          # Convert array to JSON
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "files=[]" >> $GITHUB_OUTPUT
+          else
+            json_array=$(printf '%s,' "${files[@]}" | sed 's/,$//')
+            echo "files=[$json_array]" >> $GITHUB_OUTPUT
+          fi
+
+  import-issues:
+    needs: find-changed-files
+    runs-on: ubuntu-latest
+    if: needs.find-changed-files.outputs.files != '[]'
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.find-changed-files.outputs.files) }}
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Import issues from changed file ${{ matrix.file }}
+        uses: dsanchezcr/issue-importer-action@v1
+        with:
+          file-path: ${{ matrix.file }}
+          file-format: ${{ matrix.format }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  commit-changes:
+    needs: [find-changed-files, import-issues]
+    runs-on: ubuntu-latest
+    if: always() && needs.find-changed-files.outputs.files != '[]'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Commit updated issue definition files
         run: |
           git config --local user.email "action@github.com"
@@ -39,4 +118,3 @@ jobs:
           else
             git commit -m "Update issue definition files after import [skip ci]"
             git push
-          fi
