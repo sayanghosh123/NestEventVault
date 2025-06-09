@@ -15,7 +15,7 @@ permissions:
   issues: write
 
 jobs:
-  find-files:
+  find-changed-files:
     runs-on: ubuntu-latest
     outputs:
       files: ${{ steps.find-files.outputs.files }}
@@ -25,12 +25,24 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Find issue definition files
+      - name: Find changed/added issue definition files
         id: find-files
         run: |
           files=()
-          for file in src/data/issues/*.{yml,yaml,csv}; do
-            # Skip if no files match the pattern
+          
+          # Get the list of changed and added files in src/data/issues/ with target extensions
+          # Use git diff to compare with the previous commit
+          if [ "${{ github.event_name }}" = "push" ]; then
+            # For push events, compare with the previous commit
+            changed_files=$(git diff --name-only --diff-filter=AM ${{ github.event.before }}..${{ github.event.after }} -- 'src/data/issues/*.yml' 'src/data/issues/*.yaml' 'src/data/issues/*.csv' || true)
+          else
+            # For workflow_dispatch or other events, find all matching files
+            changed_files=$(find src/data/issues/ -name "*.yml" -o -name "*.yaml" -o -name "*.csv" || true)
+          fi
+          
+          # Process each changed/added file
+          for file in $changed_files; do
+            # Skip if file doesn't exist (could be deleted)
             [ -f "$file" ] || continue
 
             # Skip README and other non-issue files
@@ -50,21 +62,25 @@ jobs:
               continue
             fi
 
-            echo "Found $file with format: $format"
+            echo "Found changed/added file: $file with format: $format"
             files+=("{\"file\":\"$file\",\"format\":\"$format\"}")
           done
 
           # Convert array to JSON
-          json_array=$(printf '%s,' "${files[@]}" | sed 's/,$//')
-          echo "files=[$json_array]" >> $GITHUB_OUTPUT
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "files=[]" >> $GITHUB_OUTPUT
+          else
+            json_array=$(printf '%s,' "${files[@]}" | sed 's/,$//')
+            echo "files=[$json_array]" >> $GITHUB_OUTPUT
+          fi
 
   import-issues:
-    needs: find-files
+    needs: find-changed-files
     runs-on: ubuntu-latest
-    if: needs.find-files.outputs.files != '[]'
+    if: needs.find-changed-files.outputs.files != '[]'
     strategy:
       matrix:
-        include: ${{ fromJson(needs.find-files.outputs.files) }}
+        include: ${{ fromJson(needs.find-changed-files.outputs.files) }}
       fail-fast: false
 
     steps:
@@ -73,7 +89,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Import issues from ${{ matrix.file }}
+      - name: Import issues from changed file ${{ matrix.file }}
         uses: dsanchezcr/issue-importer-action@v1
         with:
           file-path: ${{ matrix.file }}
@@ -82,9 +98,9 @@ jobs:
         continue-on-error: true
 
   commit-changes:
-    needs: [find-files, import-issues]
+    needs: [find-changed-files, import-issues]
     runs-on: ubuntu-latest
-    if: always() && needs.find-files.outputs.files != '[]'
+    if: always() && needs.find-changed-files.outputs.files != '[]'
 
     steps:
       - name: Checkout repository
